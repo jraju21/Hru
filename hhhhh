@@ -1,21 +1,11 @@
-CRNT_RCRD_IND
-EXPRD_IND
-SRC_CRTD_TS
-SRC_CRTD_TS_NS
-SRC_LSN
-SRC
-SRC_DB_OPRTN_CD
-SRC_TXN_ID
-CRTD_TS
-CRTD_BY
-
-source:
-
-
-SRC_CRTD_TS_NS
-SRC_LSN
-SRC
-SRC_DB_OPRTN_CD
-SRC_TXN_ID
-CRTD_TS
-CRTD_BY
+Target Column	Target Type	Source Column(s)	Transformation Logic	Confidence	Notes
+CRNT_RCRD_IND	BOOLEAN	CRNT_RCRD_IND	IFF(CRNT_RCRD_IND='Y', TRUE, FALSE)	High	Skip cast if source is already boolean
+EXPRD_IND	BOOLEAN	EXPRD_IND	IFF(EXPRD_IND='Y', TRUE, FALSE)	High	Skip cast if source is already boolean
+SRC_CRTD_TS	NUMBER	SRC_UPDT_TS (alt: SRC_EFCTV_START_TS)	DATE_PART(EPOCH_MILLISECOND, SRC_UPDT_TS)	Medium	Confirm epoch unit (ms vs s)
+SRC_CRTD_TS_NS	NUMBER	SRC_UPDT_TS	DATE_PART(EPOCH_NANOSECOND, SRC_UPDT_TS)	Medium	
+SRC_LSN	NUMBER	CMPNT_SEQ_NBR or raw Kafka payload LSN / offset	Prefer payload LSN via RAW_RCRD_KEY; else CMPNT_SEQ_NBR	Low	Needs confirmation
+SRC	TBD	SRC_APP_ID or constant source-system name	SRC_APP_ID	Medium	Target data type still TBD
+SRC_DB_OPRTN_CD	VARCHAR(1)	Derived (EXPRD_IND, version order)	CASE WHEN EXPRD_IND='Y' THEN 'D' WHEN ROW_NUMBER() OVER (PARTITION BY ACCT_ID ORDER BY SRC_EFCTV_START_TS)=1 THEN 'I' ELSE 'U' END	Derived	Use real op code from raw payload if available
+SRC_TXN_ID	NUMBER	No direct source column	Pull from raw Kafka payload (e.g. txId) via RAW_RCRD_KEY	Gap	ETL_ID is not equivalent
+CRTD_TS	TIMESTAMP_NTZ	System	CURRENT_TIMESTAMP()::TIMESTAMP_NTZ	High	Load timestamp
+CRTD_BY	VARCHAR	System	CURRENT_USER() or pipeline/job name	High	
